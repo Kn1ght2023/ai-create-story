@@ -1,0 +1,83 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Verify tag is on main
+        run: |
+          git fetch origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "Tag ${GITHUB_REF_NAME} is not on main branch, skipping release."
+            exit 1
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          # 项目零依赖无 go.sum，关闭缓存避免报错
+          cache: false
+
+      - name: Cross-compile binaries
+        env:
+          CGO_ENABLED: "0"
+        run: |
+          mkdir -p release
+          targets=(
+            "linux amd64"
+            "linux arm64"
+            "windows amd64"
+            "darwin amd64"
+            "darwin arm64"
+          )
+          for target in "${targets[@]}"; do
+            read -r goos goarch <<< "$target"
+            ext=""
+            [ "$goos" = "windows" ] && ext=".exe"
+            out="show-me-the-story${ext}"
+            echo "Building ${goos}/${goarch}..."
+            GOOS="$goos" GOARCH="$goarch" go build -trimpath -ldflags "-s -w -X main.version=${GITHUB_REF_NAME}" -o "$out" .
+            name="show-me-the-story-${GITHUB_REF_NAME}-${goos}-${goarch}"
+            if [ "$goos" = "windows" ]; then
+              zip -q "release/${name}.zip" "$out"
+            else
+              tar -czf "release/${name}.tar.gz" "$out"
+            fi
+            rm -f "$out"
+          done
+          ls -lh release/
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" release/* \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes

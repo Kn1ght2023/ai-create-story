@@ -1,0 +1,53 @@
+version: "3"
+
+vars:
+  BINARY:
+    sh: echo show-me-the-story$(go env GOEXE)
+
+tasks:
+  frontend:install:
+    desc: 安装前端依赖
+    dir: frontend
+    cmds:
+      - npm install
+
+  frontend:build:
+    desc: 构建前端
+    dir: frontend
+    deps: [frontend:install]
+    cmds:
+      - npm run build
+
+  build:
+    desc: 编译项目（含前端构建）
+    deps: [frontend:build]
+    cmds:
+      - go build -o {{.BINARY}} .
+
+  build:go:
+    desc: 仅编译 Go（跳过前端，需先运行 frontend:build）
+    cmds:
+      - go build -o {{.BINARY}} .
+
+  dev:
+    desc: 编译并启动开发服务器
+    deps: [build]
+    cmds:
+      - ./{{.BINARY}}
+
+  dev:frontend:
+    desc: 启动前端开发服务器（热重载）
+    dir: frontend
+    deps: [frontend:install]
+    cmds:
+      - npm run dev
+
+  clean:
+    desc: 清理编译产物
+    cmds:
+      - cmd: rm -f show-me-the-story show-me-the-story.exe
+        platforms: [linux, darwin]
+      - cmd: Remove-Item -Force -ErrorAction SilentlyContinue show-me-the-story.exe
+        platforms: [windows]
+      - cmd: rm -rf frontend/dist
+        platforms: [linux, darwin]

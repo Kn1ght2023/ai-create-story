@@ -1,0 +1,54 @@
+# Private development documents, test data and archives
+/.local/
+/AGENTS.md
+/.kilo/
+/.agents/
+/.codex/
+
+# Runtime configuration and private novel projects
+/api.json
+/api.json.*
+/storys/
+/fingerprint_runs/
+/导出数据_测试/
+/导出数据_测试.zip
+*.storyproj
+
+# Credentials and local environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Binaries, frontend dependencies and build output
+/show-me-the-story
+/show-me-the-story.exe
+/showmethestory
+/frontend/node_modules/
+/frontend/dist/
+/coverage/
+coverage.out
+*.test
+*.exe
+
+# Logs, Python caches and temporary files
+*.log
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.tmp
+*.swp
+*.swo
+*~
+
+# Operating system and editor files
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+
+# Keep source JSON, frontend manifests and lockfiles trackable.
+# Do not add a global *.json or *.md rule.
